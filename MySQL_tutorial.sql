@@ -2928,6 +2928,8 @@ ORDER BY LENGTH(item_no), item_no;
 ## Section 1. Stored procedure basics;
 # Basics;
 
+By definition, a stored procedure is a segment of declarative SQL statements stored inside the MySQL Server.
+
 
 DELIMITER$$
 CREATE PROCEDURE GetCustomers()
@@ -3080,29 +3082,340 @@ WHERE
 # IF;
 
 
+DROP PROCEDURE IF EXISTS GetCustomerLevel;
+DELIMITER $$
+CREATE PROCEDURE GetCustomerLevel(
+    IN pCustN INT,
+    OUT pCustL VARCHAR(20)
+)
+BEGIN
+    DECLARE credit DECIMAL(10,2) DEFAULT 0;
+
+    SELECT
+        creditLimit
+    INTO
+        credit
+    FROM
+        customers
+    WHERE
+        customerNumber = pCustN;
+    
+    IF credit > 50000 THEN
+        SET pCustL = 'PLATINUM';
+    ELSEIF credit < 50000 AND credit > 10000 THEN
+        SET pCustL = 'GOLD';
+    ELSE
+        SET pCustL = 'SILVER';
+    END IF;
+END$$
+DELIMITER ;
+
+CALL GetCustomerLevel(447, @level);
+SELECT @level;
+
+
+# CASE;
+
+DROP PROCEDURE IF EXISTS GetCustomerShipping;
+DELIMITER $$
+CREATE PROCEDURE GetCustomerShipping(
+    IN pCustN INT,
+    OUT pShip VARCHAR(50)
+)
+BEGIN
+    DECLARE custCount VARCHAR(50);
+
+    SELECT country
+    INTO custCount
+    FROM customers
+    WHERE customerNumber = pCustN;
+
+    CASE custCount
+        WHEN 'USA' THEN
+            SET pShip = '2-days';
+        WHEN 'Canada' THEN
+            SET pShip = '3-days';
+        ELSE
+            SET pShip = '7-days';
+    END CASE;
+END$$
+DELIMITER ;
+
+CALL GetCustomerShipping(103, @shpiipng);
+SELECT @shpiipng;
+
+DELIMITER $$
+CREATE PROCEDURE GetDeliveryStatus(
+	IN pOrderNumber INT,
+    OUT pDeliveryStatus VARCHAR(100)
+)
+BEGIN
+	DECLARE waitingDay INT DEFAULT 0;
+    SELECT 
+		DATEDIFF(requiredDate, shippedDate)
+	INTO waitingDay
+	FROM orders
+    WHERE orderNumber = pOrderNumber;
+    
+    CASE 
+		WHEN waitingDay = 0 THEN 
+			SET pDeliveryStatus = 'On Time';
+        WHEN waitingDay >= 1 AND waitingDay < 5 THEN
+			SET pDeliveryStatus = 'Late';
+		WHEN waitingDay >= 5 THEN
+			SET pDeliveryStatus = 'Very Late';
+		ELSE
+			SET pDeliveryStatus = 'No Information';
+	END CASE;	
+END$$
+DELIMITER ;
+
+CALL GetDeliveryStatus(10100, @delivery);
+SELECT @delivery;
+
+
+## Section 3. Loops;
+# LOOP;
+
+DROP PROCEDURE IF EXISTS LoopDemo;
+DELIMITER $$
+CREATE PROCEDURE LoopDemo()
+BEGIN
+	DECLARE x INT;
+	DECLARE str VARCHAR(255);
+        
+	SET x = 1;
+	SET str =  '';
+        
+	loop_label:  LOOP
+		IF  x > 10 THEN 
+			LEAVE  loop_label;
+		END  IF;
+            
+		SET  x = x + 1;
+		IF  (x mod 2) THEN
+			ITERATE  loop_label;
+		ELSE
+			SET  str = CONCAT(str, x ,', ');
+		END  IF;
+	END LOOP;
+	SELECT str;
+END$$
+DELIMITER ;
+
+# nie działa, pod Workbenchem działa
+CALL classicmodels.LoopDemo();
+
+
+# WHILE;
+
+CREATE TABLE calendars(
+    id INT AUTO_INCREMENT,
+    fulldate DATE UNIQUE,
+    day TINYINT NOT NULL,
+    month TINYINT NOT NULL,
+    quarter TINYINT NOT NULL,
+    year INT NOT NULL,
+    PRIMARY KEY(id)
+);
+
+DROP PROCEDURE IF EXISTS InsertCalendar;
+DELIMITER $$
+CREATE PROCEDURE InsertCalendar(dt DATE)
+BEGIN
+    INSERT INTO calendars(
+        fulldate,
+        day,
+        month,
+        quarter,
+        year
+    )
+    VALUES(
+        dt, 
+        EXTRACT(DAY FROM dt),
+        EXTRACT(MONTH FROM dt),
+        EXTRACT(QUARTER FROM dt),
+        EXTRACT(YEAR FROM dt)
+    );
+END$$
+DELIMITER ;
+
+DROP PROCEDURE IF EXISTS LoadCalendars;
+DELIMITER $$
+CREATE PROCEDURE LoadCalendars(
+    startDate DATE, 
+    day INT
+)
+BEGIN
+    DECLARE counter INT DEFAULT 1;
+    DECLARE dt DATE DEFAULT startDate;
+
+    WHILE counter <= day DO
+        CALL InsertCalendar(dt);
+        SET counter = counter + 1;
+        SET dt = DATE_ADD(dt,INTERVAL 1 day);
+    END WHILE;
+END$$
+DELIMITER ;
+
+# coś to zamieszane
+CALL LoadCalendars('2019-01-01',31);
+
+
+DROP PROCEDURE IF EXISTS While_demo;
+DELIMITER $$
+CREATE PROCEDURE While_demo(
+    IN lim INT
+)
+BEGIN
+    DECLARE counter INT;
+    DECLARE str1 VARCHAR(255);
+
+    SET counter = 1;
+    SET str1 = '';
+    
+    WHILE counter <= lim DO
+        SET str1 = CONCAT(str1, counter ,', ');
+        SET counter = counter + 1;
+    END WHILE;
+SELECT str1;
+END$$
+DELIMITER ;
+
+CALL classicmodels.While_demo(5);
+
+
+# REPEAT;
+
+DELIMITER $$
+CREATE PROCEDURE RepeatDemo()
+BEGIN
+    DECLARE counter INT DEFAULT 1;
+    DECLARE result VARCHAR(100) DEFAULT '';
+    
+    REPEAT
+        SET result = CONCAT(result,counter,',');
+        SET counter = counter + 1;
+    UNTIL counter >= 10
+    END REPEAT;
+    
+    -- display result
+    SELECT result;
+END$$
+DELIMITER ;
+
+CALL RepeatDemo;
+
+
+# LEAVE;
+
+
+DROP PROCEDURE IF EXISTS CheckCredit;
+DELIMITER $$
+CREATE PROCEDURE CheckCredit(
+    inCustomerNumber int
+)
+sp: BEGIN
+    
+    DECLARE customerCount INT;
+
+    -- check if the customer exists
+    SELECT COUNT(*)
+    INTO customerCount 
+    FROM customers
+    WHERE customerNumber = inCustomerNumber;
+    
+    -- if the customer does not exist, terminate
+    -- the stored procedure
+    IF customerCount = 0 THEN
+        LEAVE sp;
+    END IF;
+    
+    -- other logic
+    -- ...
+    SELECT customerCount;
+END$$
+DELIMITER ;
+
+CALL classicmodels.CheckCredit(103);
+
+
+## Section 4. Error Handling;
+# Handing exceptions;
+# to na później;
+
+
+## Section 5. Cursors;
+# to też;
+
+
+## Section 6. Stored Functions;
+# Stored Function;
+
+A stored function is a special kind stored program that returns a single value. 
+
+DROP FUNCTION IF EXISTS CustomerLevel;
+DELIMITER $$
+CREATE FUNCTION CustomerLevel(
+    credit DECIMAL(10, 2)
+) 
+RETURNS VARCHAR(20)
+DETERMINISTIC
+BEGIN
+    DECLARE customerLevel VARCHAR(20);
+
+    IF credit > 50000 THEN
+        SET customerLevel = 'PLATINUM';
+    ELSEIF (credit >= 50000 AND credit <= 10000) THEN
+        SET customerLevel = 'GOLD';
+    ELSEIF credit < 10000 THEN
+        SET customerLevel = 'SILVER';
+    END IF;
+    -- return the customer level
+    RETURN (customerLevel);
+END$$
+DELIMITER ;
+
+SHOW FUNCTION STATUS
+WHERE db = 'classicmodels';
+
+SELECT 
+    customerName, 
+    CustomerLevel(creditLimit)
+FROM
+    customers
+ORDER BY 
+    customerName;
+
+
+DROP PROCEDURE IF EXISTS GetCustomerLevel2;
+DELIMITER $$
+CREATE PROCEDURE GetCustomerLevel2(
+    IN  customerNo INT,  
+    OUT customerLevel VARCHAR(20)
+)
+BEGIN
+    DECLARE credit DEC(10,2) DEFAULT 0;
+    -- get credit limit of a customer
+    SELECT creditLimit 
+	INTO credit
+    FROM customers
+    WHERE customerNumber = customerNo;
+    -- call the function 
+    SET customerLevel = CustomerLevel(credit);
+END$$
+DELIMITER ;
+
+CALL GetCustomerLevel(131,@customerLevel);
+SELECT @customerLevel;
+
+SHOW FUNCTION STATUS LIKE '%Customer%';
 
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+## Section 7. Stored Program Security;
+# Stored Object Access Control;
 
 
 
