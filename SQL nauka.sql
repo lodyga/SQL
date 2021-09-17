@@ -1,4 +1,4 @@
-mysql -uroot -p!@#$!@#$ -h 127.0.0.1 -P 3306
+mysql -uroot -pq@#$!@#$ -h 127.0.0.1 -P 3306
 
 https://www.w3schools.com/sql/default.asp
 
@@ -289,7 +289,7 @@ SELECT movie_id, membership_number, return_date, CURDATE(), sf_past_movie_return
 FROM movierentals;
 
 CREATE VIEW accounts2 AS 
-`tu odzie normalny kod` 
+`tu idzie normalny kod` 
 SELECT membership_number, full_names, gender FROM members
 
 1) COUNT
@@ -313,10 +313,9 @@ SELECT * FROM orders
 UPDATE orders_arch
 SET comments = 'dobra klient'
 WHERE customerNumber IN 
-				(SELECT customerNumber
-                FROM customers
-                WHERE creditlimit > 100000)
-				
+    (SELECT customerNumber
+    FROM customers
+    WHERE creditlimit > 100000)
 
 DDL commands are: 
 1) CREATE, 2) ALTER, 3) DROP, 4) TRUNCATE, etc. 

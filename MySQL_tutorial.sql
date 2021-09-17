@@ -1,15 +1,14 @@
-# load the sample database 
+m# load the sample database 
 mysql> source <filename>
 source mysqlsampledatabase.sql
 
 # Connect to the MySQL server 
 mysql -u root -p
-mysql -uroot -p!@#$!@#$ -h 127.0.0.1 -P 3306
+mysql -uroot -pq@#$q@#$ -h 127.0.0.1 -P 3306
 localhost = 127.0.0.1
 
-# show databases
-mysql> show databases;
-
+mysql> SHOW DATABASES;
+mysql> USE <DATABASE_NAME>
 
 SELECT DATABASE() FROM DUAL;
 
@@ -18,7 +17,27 @@ SHOW INDEX FROM classicmodels.employees;
 DESCRIBE classicmodels.employees;
 
 
+SELECT
+    
+FROM
+    
+INNER JOIN
+    
+WHERE
+    
+GROUP BY
+    
+HAVING
+    
+ORDER BY
+    
+LIMIT
+    
+UNION ALL
+;
 
+
+### https://www.mysqltutorial.org/getting-started-with-mysql/
 ## Section 1. Querying data;
 SELECT lastName
 FROM classicmodels.employees;
@@ -29,8 +48,8 @@ FROM classicmodels.employees;
 ## Section 2. Sorting data;
 SELECT c1, c2 * c3 AS total
 ORDER BY 
-   column1 [ASC|DESC], 
-   total [ASC|DESC],
+    column1 [ASC|DESC], 
+    total [ASC|DESC],
 
 ORDER BY 
     FIELD (status,
@@ -92,7 +111,7 @@ SELECT
     DISTINCT state
 FROM 
     customers
-WHERE 
+WHERE
     country = 'USA'
 LIMIT
     5;
@@ -149,7 +168,7 @@ FROM
     orders
 WHERE
     orderNumber IN
-    (# 10165, 10287, 10310
+    (# 10165, 10287, 10310 subquery
         SELECT
             orderNumber
         FROM
@@ -194,7 +213,7 @@ SELECT
 FROM
     products
 WHERE
-    # productCode LIKE '%\_20%'
+    # productCode LIKE '%\_20%' # / as escape character
     productCode LIKE '%$_20%' ESCAPE '$';
 
 
@@ -667,14 +686,37 @@ HAVING
     ord.status = 'Shipped'
 ;
 
+SELECT
+    ord.orderNumber,
+    ord.status,
+    SUM(od.quantityOrdered * od.priceEach) AS total
+FROM
+    orders AS ord
+INNER JOIN
+    orderdetails AS od USING (orderNumber)
+WHERE
+    ord.status = 'Shipped'
+GROUP BY
+    ord.orderNumber
+HAVING
+    total > 10000 # total liczone po GROUP BY dlatego musi tu być
+;
+
+SELECT status, COUNT(orderNumber) AS status_count
+FROM `classicmodels`.`orders`
+GROUP BY status
+HAVING status_count > 5
+ORDER BY status_count ASC
+LIMIT 1000;
+
 
 # ROLLUP;
 
 CREATE TABLE sales
 SELECT
     productLine,
-    YEAR(orderDate) orderYear,
-    SUM(quantityOrdered * priceEach) orderValue
+    YEAR(orderDate) AS orderYear,
+    SUM(quantityOrdered * priceEach) AS orderValue
 FROM
     orderdetails
         INNER JOIN
@@ -683,7 +725,8 @@ FROM
     products USING (productCode)
 GROUP BY
     productLine ,
-    YEAR(orderDate);
+    YEAR(orderDate)
+;
 
 SELECT
     productLine, SUM(orderValue) AS totalValue
@@ -760,8 +803,8 @@ GROUP BY
 WITH ROLLUP;
 
 SELECT
-    IF( GROUPING(orderYear), 'AllYears', orderYear ),
-    IF( GROUPING(productLine), 'AllLines', productLine ), 
+    IF( GROUPING(orderYear), 'AllYears', orderYear ) AS orderYear,
+    IF( GROUPING(productLine), 'AllLines', productLine ) AS productLine, 
     SUM(orderValue) totalOrderValue
 FROM
     sales
@@ -829,7 +872,7 @@ WHERE
 ;
 
 SELECT
-    COUNT(*) AS items
+    orderNumber, COUNT(*) AS items
 FROM
     orderdetails
 GROUP BY
@@ -842,7 +885,7 @@ SELECT
     FLOOR(AVG(items)) AS avg
 FROM
     (SELECT
-        COUNT(*) AS items
+        orderNumber, COUNT(*) AS items
     FROM
         orderdetails
     GROUP BY
@@ -860,18 +903,6 @@ GROUP BY orderNumber
 SELECT
     productName, productLine, buyPrice
 FROM
-    products
-WHERE
-    buyPrice >
-    (SELECT 
-        AVG(buyPrice)
-    FROM
-        products)
-;
-
-SELECT
-    productName, productLine, buyPrice
-FROM
     products AS p1
 WHERE
     buyPrice >
@@ -883,8 +914,21 @@ WHERE
         productLine = p1.productLine)
 ;
 
+# ten nie ma WHERE i działainaczej, hmm....
 SELECT
-    ROUND(AVG(buyPrice))
+    productName, productLine, buyPrice
+FROM
+    products
+WHERE
+    buyPrice >
+    (SELECT 
+        AVG(buyPrice)
+    FROM
+        products)
+;
+
+SELECT
+    ROUND(AVG(buyPrice), 2)
 FROM
     products
 ;
@@ -898,8 +942,8 @@ GROUP BY
     productLine
 ;
 
-SELECT 
-    orderNumber, 
+SELECT
+    orderNumber,
     SUM(priceEach * quantityOrdered) total
 FROM
     orderdetails
@@ -908,18 +952,40 @@ INNER JOIN
 GROUP BY 
     orderNumber
 HAVING 
-    SUM(priceEach * quantityOrdered) > 60000
+    total > 60000
 ;
 
 # To jest podejrzane, EXISTS magicznie działa
+# (WHERE) łączy obie tabele
+# następny kod bardziej jasny
 SELECT
     customerNumber, customerName
 FROM
     customers
 WHERE EXISTS
-    (SELECT 
+    (SELECT
         orderNumber, 
-        SUM(priceEach * quantityOrdered) total
+        SUM(priceEach * quantityOrdered) AS total
+    FROM
+        orderdetails
+    INNER JOIN
+        orders USING (orderNumber)
+    # dodatkowy WHERE
+    WHERE
+        customerNumber = customers.customerNumber
+    GROUP BY 
+        orderNumber
+    HAVING 
+        total > 60000)
+;
+
+SELECT
+    customerNumber, customerName
+FROM
+    customers
+WHERE customerNumber IN
+    (SELECT
+        customerNumber
     FROM
         orderdetails
     INNER JOIN
@@ -930,7 +996,15 @@ WHERE EXISTS
         SUM(priceEach * quantityOrdered) > 60000)
 ;
 
+
 # Derived table;
+
+SELECT
+    NULL
+UNION ALL
+SELECT
+    NULL
+;
 
 SELECT
     od.productCode,
@@ -941,6 +1015,18 @@ INNER JOIN
     orderdetails AS od USING( orderNumber )
 GROUP BY
     od.productCode
+ORDER BY
+    sales DESC
+LIMIT 5
+;
+
+SELECT
+    productCode,
+    SUM(quantityOrdered * priceEach) AS sales
+FROM
+    orderdetails AS o
+GROUP BY
+    productCode
 ORDER BY
     sales DESC
 LIMIT 5
@@ -962,7 +1048,8 @@ FROM
         sales DESC
     LIMIT 5) AS useless
 INNER JOIN
-    products USING (productCode)
+    # products USING (productCode)
+    products ON products.productCode = useless.productCode
 ;
 
 # odwrotnie nie chce
@@ -1041,6 +1128,17 @@ GROUP BY
     o.customerNumber
 ;
 
+# DISTINCT zamiast GROUP BY
+SELECT DISTINCT
+    o.customerNumber, c.customerName, c.city
+FROM
+    orders AS o
+INNER JOIN
+    customers AS c USING (customerNumber)
+WHERE
+    city = 'San Francisco'
+;
+
 SELECT
     o.customerNumber, c.customerName
 FROM
@@ -1066,6 +1164,20 @@ WHERE EXISTS
     city = 'San Francisco')
 ;
 
+# brak (WHERE) nie robi różnicy, choć wownętrzny query sam nie działa
+SELECT
+    c.customerNumber, c.customerName
+FROM
+    customers AS c
+WHERE EXISTS
+    (SELECT
+        *
+    FROM
+        orders AS o
+    WHERE city = 'San Francisco')
+;
+
+# łączy odwrotnie
 SELECT
     o.customerNumber
 FROM
@@ -1229,7 +1341,7 @@ SELECT
     SUM(od.quantityOrdered * od.priceEach) AS sales
 FROM
     orders AS o
-INNER JOIN
+INNER JOINe
     orderdetails AS od USING( orderNumber )
 INNER JOIN
     customers AS c USING(customerNumber)
@@ -3422,42 +3534,120 @@ SHOW FUNCTION STATUS LIKE '%Customer%';
 
 
 
+# SELECT NULL blank coulmn;
 
 
-
-
-
-# SELECT NULL blank coulmn
-
-
-
+Which query would be used to administer a MySQL server?;
 USE classicmodels;
-SELECT *
-FROM customers;
+SHOW TABLES;
+SHOW COLUMNS FROM customers;
+DESCRIBE customers;
 
 
-SHOW DATABASES
+SHOW GRANTS;
+SHOW CREATE TABLE classicmodels.customers;
+SHOW DATABASES;
+SHOW TRIGGERS;
 
-DROP DATABASE classicmodels
+maintenance statements
+ANALYZE TABLE customers;
+OPTIMIZE TABLE customers;
+CHECK TABLE customers;
 
-ALTER TABLE cust2
-ADD COLUMN add1 varchar(50) AFTER phone
 
-INSERT INTO cust2 (add1)
-SELECT addressLine1
-FROM customers
+# hackerrank certification test
+Basic
+/*
+Enter your query below.
+Please append a semicolon ";" at the end of the query
+*/
+SELECT student_information.roll_number, student_information.name
+FROM student_information, examination_marks
+WHERE student_information.roll_number = examination_marks.roll_number AND (examination_marks.subject_one + examination_marks.subject_two + examination_marks.subject_three) < 100
+;
 
-CREATE TABLE classicmodels.cust2 AS
-SELECT * FROM classicmodels.customers
+Inter
+# 1
+SELECT
+    us.id, us.first_name, us.last_name, cu.id, cu.customer_name, co.contact_type_id
+FROM
+    contact AS co
+INNER JOIN
+    customer AS cu ON cu.id = co.customer_id
+INNER JOIN
+    user_account AS us ON us.id = co.user_account_id
+WHERE
+    co.contact_type_id > 1
+;
 
-ALTER TABLE cust2
-DROP COLUMN addressLine1
+SELECT
+    user_account_id, co.customer_id, count(*) AS coun
+FROM
+    contact AS co
+GROUP BY
+    user_account_id, co.customer_id
+HAVING
+    coun > 1
+;
 
-SELECT * FROM `classicmodels`.`cust2` LIMIT 1000;
+# grupuje po od.productCode, od.orderLineNumber i bierze productName z innej tabeli
+SELECT
+    od.productCode, pr.productName, od.orderLineNumber, COUNT(*)
+FROM
+    orderdetails AS od
+INNER JOIN
+    products AS pr USING(productCode)  
+GROUP BY
+    od.productCode, od.orderLineNumber
+HAVING
+    COUNT(*) > 6
+;
 
-SELECT status, COUNT(orderNumber) AS status_count
-FROM `classicmodels`.`orders`
-GROUP BY status
-HAVING COUNT(orderNumber) > 5
-ORDER BY COUNT(orderNumber) ASC
-LIMIT 1000;
+# to powinnio było zadziałać
+SELECT
+    us.id, us.first_name, us.last_name, cu.id, cu.customer_name, co.contact_type_id
+FROM
+    contact AS co
+INNER JOIN
+    customer AS cu ON cu.id = co.customer_id
+INNER JOIN
+    user_account AS us ON us.id = co.user_account_id
+GROUP BY
+    user_account_id, co.customer_id
+HAVING
+    COUNT(*) > 1
+;
+
+#2
+SELECT
+    customerName, ROUND(amount, 6)
+FROM
+    payments
+INNER JOIN
+    customers AS cu USING(customerNumber)
+WHERE
+    amount <
+    (SELECT
+        0.5*AVG(amount)
+    FROM
+        payments
+    )
+ORDER BY
+    amount DESC
+;
+
+SELECT
+    cu.customer_name, ROUND(inv.total_price, 6)
+FROM
+    invoice AS inv
+INNER JOIN
+    customer AS cu ON cu.id = inv.customer_id
+WHERE
+    inv.total_price < 
+    (SELECT
+        0.25*AVG(total_price)
+    FROM
+        invoice
+    )
+;
+
