@@ -6,15 +6,14 @@ SELECT [DISTINCT|ALL ] { * | [fieldExpression [AS newName]} FROM tableName [alia
 
 CLALSSES
 USE
-SELECT * col_name AS (alias) DISTINCT
-, COUNT()
+SELECT COUNT, MIN, AVG(* | <col_name> || <col_name2>  AS (alias) | DISTINCT)
 FROM
 JOIN tab_name
-WHERE (ON) col_name <=> val col_name in () BETWEEN x AND y LIKE '%a%' IS NOT NULL
-ORDER BY col_name DESC
+WHERE (ON) col_name <=> val col_name in () | BETWEEN x AND y | LIKE '%a%' IS NOT NULL
+ORDER BY <col_name> DESC
 GROUP BY
 HAVING
-LIMIT `skip`, `show`
+LIMIT <int> OFFSET <int>  `skip`, `show`
 
 Sub-Query
 SELECT category_name

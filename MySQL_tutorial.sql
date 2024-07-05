@@ -1,18 +1,29 @@
-m# load the sample database 
-mysql> source <filename>
-source mysqlsampledatabase.sql
+-- import a database from a file
+mysql> SOURCE <path_to_the_file/filename.sql>
+sudo mysql < mysqlsampledatabase.sql 
 
-# Connect to the MySQL server 
+-- Connect to the MySQL server
+sudo mysql
 mysql -u root -p
 mysql -uroot -pq@#$q@#$ -h 127.0.0.1 -P 3306
 localhost = 127.0.0.1
 
-mysql> SHOW DATABASES;
-mysql> USE <DATABASE_NAME>
+-- if logging makes problems
+ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'password';
+flush privileges;
 
+
+-- first steps
+mysql> SHOW DATABASES;
+mysql> USE <DATABASE_NAME>;
+mysql> SHOW TABLES;
+mysql> SHOW COLUMNS FROM <table>;
+
+-- show active database
 SELECT DATABASE() FROM DUAL;
 
 USE classicmodels;
+USE myflixdb;
 SHOW INDEX FROM classicmodels.employees;
 DESCRIBE classicmodels.employees;
 
@@ -61,17 +72,17 @@ ORDER BY
 
 ## Section 3. Filtering data;
 # WHERE
-    search_condition;
+search_condition;
 
-SELECT 
+SELECT
     lastname
 FROM
-    employees
+    classicmodels.employees
 WHERE
     jobtitle = 'Sales Rep' AND officeCode BETWEEN 1 AND 2
 # The % wildcard matches any string of zero or more characters while the _ wildcard matches any single character.
 # lastName LIKE '%son'
-# officeCode IN (1, 2, 3)
+-- officeCode IN (1, 2, 3)
 # reportsTo IS NOT NULL;
 
 
