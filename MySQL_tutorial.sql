@@ -8,6 +8,9 @@ mysql -u root -p
 mysql -uroot -pq@#$q@#$ -h 127.0.0.1 -P 3306
 localhost = 127.0.0.1
 
+protocol://root:password@host:port/database_name
+mysql://uz0ogbmudkpigwhp:ALJN31Fwd1QHUzEh0iHr@bmozvgttidede6nlrj6k-mysql.services.clever-cloud.com:3306/bmozvgttidede6nlrj6k
+
 -- if logging makes problems
 ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'password';
 flush privileges;
@@ -27,6 +30,18 @@ USE myflixdb;
 SHOW INDEX FROM classicmodels.employees;
 DESCRIBE classicmodels.employees;
 
+-- export local database to server
+mysqldump -u root -p codesite_db > dump.sql
+mysql -h bmozvgttidede6nlrj6k-mysql.services.clever-cloud.com \
+      -u uz0ogbmudkpigwhp \
+      -p password < dump.sql
+
+psql -h bkkkdsogwmivlnenigc9-postgresql.services.clever-cloud.com \
+     -u uciucfvga7q5sokdvyk2 \
+     -p password < postgresql_codesite_db_2026-03-23_151625
+
+psql "postgresql://USER:PASSWORD@HOST:PORT/DBNAME" < dump.sql
+psql "postgresql://uciucfvga7q5sokdvyk2:password@bkkkdsogwmivlnenigc9-postgresql.services.clever-cloud.com:50013/bkkkdsogwmivlnenigc9" < postgresql_codesite_db_2026-03-23_151625
 
 SELECT
     

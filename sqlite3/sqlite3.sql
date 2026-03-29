@@ -6,6 +6,7 @@ s> .quit  # exit sqlite3
 s> .schema Users
 s> .mode column  # chages display
 s> PRAGMA table_info(<table_name>)  # colnames
+s> select * from <table_name>
 
 CREATE TABLE Users(
     id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
@@ -38,3 +39,4 @@ ALTER TABLE python_problems_problem DROP COLUMN space_complexity_id;
 
 
 
+sqlite3mysql -f /home/ukasz/Documents/IT/Django/codesite/db.sqlite3 -d codesite_db -u root -p
